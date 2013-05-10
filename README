@@ -1,0 +1,19 @@
+1) In a CMSSW release:
+
+cvs co -d MLFit UserCode/mpierini/MLFit
+cd MLFit 
+make -f Makefile_CMS
+
+a shared library will be created: workdir/libMLFit.so.
+This will have to be loaded in ROOT before doing fits etc.
+
+
+2) setup the code to do the fit
+
+cvs co -d RadionMLFit UserCode/crovelli/RadionMLFit
+
+root -l RooLogon.C
+.L src/FitGGData.cc 
+FitGG()
+PlotGG(31)
+
