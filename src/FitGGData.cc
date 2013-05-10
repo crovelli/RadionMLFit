@@ -30,7 +30,7 @@ RooDataSet *getDataSet(const char *rootfile, const char *treename) {
   TFile *file = TFile::Open(rootfile);
   TTree *tree = (TTree*)file->Get(treename);
 
-  // RooDataSet *data = new RooDataSet("T1","dataset",tree,setall,0,weight->GetName());     
+  // RooDataSet *data = new RooDataSet("T1","dataset",tree,setall,0,weight->GetName());     // chiara!
   RooDataSet *data = new RooDataSet("myTrees","dataset",tree,setall,0);
 
   data->Print();
@@ -56,9 +56,10 @@ void FitGG() {
   theFit.AddFlatFileColumn(mjj);
   theFit.AddFlatFileColumn(btagCategory);
 
-  // to restrict to sidebands - not fully working....
-  // massggnewvtx->setRange("R1",100.,120.) ;
-  // massggnewvtx->setRange("R2",130.,180.) ; 
+  // to restrict to sidebands 
+  massggnewvtx->setRange("R1",100.,115.) ;
+  massggnewvtx->setRange("R2",135.,180.) ; 
+  massggnewvtx->setRange("Full",100.,180.) ; 
 
   // define a fit model
   theFit.addModel("myFit", "HtoGG");
@@ -68,11 +69,10 @@ void FitGG() {
   theFit.addSpecies("myFit", "bkg", "Bkg   Component");
   
   // mgg PDF - signal
-  theFit.addPdfWName("myFit", "sig" , "massggnewvtx",  "Cruijff",  "sig_Mass");           
-                                                                                
+  theFit.addPdfWName("myFit", "sig" , "massggnewvtx",  "Cruijff",  "sig_Mass");          
+
   // mLL PDF - background
-  // theFit.addPdfWName("myFit", "bkg" , "massggnewvtx",  "Bernstein3", "bkg_Mass");   
-  theFit.addPdfWName("myFit", "bkg" , "massggnewvtx",  "Expo", "bkg_Mass");        
+  theFit.addPdfWName("myFit", "bkg" , "massggnewvtx",  "Expo", "bkg_Mass");    
 
   // Load the data
   char datasetnameB[200];
@@ -85,7 +85,6 @@ void FitGG() {
   if(opts.getBoolVal("bkgOnlyFit")) data = getDataSet(datasetnameB,  treename);
   if(opts.getBoolVal("dataFit"))    data = getDataSet(datasetnameB,  treename);
 
-  // data = (RooDataSet*)data->reduce("massggnewvtx>=100 && massggnewvtx<=180 && (massggnewvtx>=130 || massggnewvtx<=120) && mjj>0 && mjj<300");
   data = (RooDataSet*)data->reduce("massggnewvtx>=100 && massggnewvtx<=180 && mjj>0 && mjj<300");
 
   // build the fit likelihood
@@ -100,14 +99,14 @@ void FitGG() {
   // Print Fit configuration 
   myPdf->getParameters(data)->selectByAttrib("Constant",kTRUE)->Print("V");  
   myPdf->getParameters(data)->selectByAttrib("Constant",kFALSE)->Print("V");
-  
+
   RooFitResult *fitres =  myPdf->fitTo(*data,
-				       // RooFit::Range("R1,R2"),   
+				       RooFit::Range("R1,R2"),   // chiara
                                        RooFit::ConditionalObservables(theFit.getNoNormVars("myFit")),
                                        RooFit::FitOptions("MHTER"),
                                        RooFit::NumCPU(4));
   fitres->Print("V");
-  
+
   // write the config file corresponding to the fit minimum
   char configfilename[200];
   if(opts.getBoolVal("bkgOnlyFit"))    theFit.writeConfigFile("fitres/fitBackground.config");  
@@ -131,9 +130,10 @@ void PlotGG(int nbins=19) {
   theFit.AddFlatFileColumn(mjj);
   theFit.AddFlatFileColumn(btagCategory);
 
-  // to restrict to sidebands - not fully working
-  // massggnewvtx->setRange("R1",100.,120.) ;
-  // massggnewvtx->setRange("R2",130.,180.) ; 
+  // to restrict to sidebands
+  massggnewvtx->setRange("R1",100.,115.) ;
+  massggnewvtx->setRange("R2",135.,180.) ; 
+  massggnewvtx->setRange("Full",100.,180.) ; 
 
   // define a fit model
   theFit.addModel("myFit", "HtoGG");
@@ -143,8 +143,8 @@ void PlotGG(int nbins=19) {
   theFit.addSpecies("myFit", "bkg", "Bkg   Component");
   
   // mgg PDF - signal
-  theFit.addPdfWName("myFit", "sig" , "massggnewvtx",  "Cruijff",  "sig_Mass");     
-                                                                               
+  theFit.addPdfWName("myFit", "sig" , "massggnewvtx",  "Cruijff",  "sig_Mass");
+                                                                                
   // mLL PDF - background
   // theFit.addPdfWName("myFit", "bkg" , "massggnewvtx",  "Bernstein3", "bkg_Mass");    
   theFit.addPdfWName("myFit", "bkg" , "massggnewvtx",  "Expo", "bkg_Mass");     
@@ -152,6 +152,7 @@ void PlotGG(int nbins=19) {
   // Load the data
   char datasetnameB[200];
   sprintf(datasetnameB, "../HHggbb/finalizedTrees_Radion_codiceCommittato/Radion_Data2012_default_CSV.root");  
+  // sprintf(datasetnameB, "../HHggbb/finalizedTrees_Radion_cut/Radion_Data2012_default_CSV.root");  
 
   char treename[100];
   if(opts.getBoolVal("dataFit")) sprintf(treename,"myTrees");  
@@ -159,7 +160,7 @@ void PlotGG(int nbins=19) {
   RooDataSet *data;
   if(opts.getBoolVal("bkgOnlyFit")) data = getDataSet(datasetnameB,  treename);
   if(opts.getBoolVal("dataFit"))    data = getDataSet(datasetnameB,  treename);
-  // data = (RooDataSet*)data->reduce("massggnewvtx>=100 && massggnewvtx<=180 && (massggnewvtx>=130 || massggnewvtx<=120) && mjj>0 && mjj<300");
+  // data = (RooDataSet*)data->reduce("massggnewvtx>=100 && massggnewvtx<=180 && (massggnewvtx>=135 || massggnewvtx<=115) && mjj>0 && mjj<300");
   data = (RooDataSet*)data->reduce("massggnewvtx>=100 && massggnewvtx<=180 && mjj>0 && mjj<300");
 
   bool usePoissonError=true;
@@ -184,14 +185,35 @@ void PlotGG(int nbins=19) {
 
   TFile *output = new TFile(rootfilename,"RECREATE");   
 
-  RooPlot* MassPlot = MakePlot("massggnewvtx", &theFit, data, nbins, false);    
+  //////////////////////////////
+  RooRealVar* Var = theFit.RealObservable("massggnewvtx");
+  double min=Var->getMin();
+  double max=Var->getMax();
+  RooPlot *plot = Var->frame(min,max,nbins);
+  
+  // plot the data
+  data->plotOn(plot, RooFit::DataError(RooAbsData::SumW2) );
 
-  MassPlot->SetYTitle("Events");
-  MassPlot->Draw();
+  // plot the total likelihood
+  RooAbsPdf *thePdf = theFit.getPdf("myFit");
+
+  // plot background in the full range, but normalized to fitted ranges - chiara
+  // thePdf->plotOn(plot, RooFit::LineColor(kBlack));
+  thePdf->plotOn(plot, RooFit::Range("Full"), RooFit::NormRange("R1,R2"),RooFit::LineColor(kBlue));
+  thePdf->plotOn(plot, RooFit::Range("R1,R2"), RooFit::NormRange("R1,R2"),RooFit::LineColor(kRed));
+
+  // plot (dashed) the bkg component
+  // double Ns = theFit.getRealPar("N_sig")->getVal();
+  // double Nb = theFit.getRealPar("N_bkg")->getVal();
+  // theFit.getRealPar("N_sig")->setVal(0.);
+  // thePdf->plotOn(plot, RooFit::Normalization(Nb/(Ns+Nb)),RooFit::LineColor(kBlack),RooFit::LineStyle(kDashed));
+
+  plot->SetYTitle("Events");
+  plot->Draw();
   char epsfilename[200];
   if(opts.getBoolVal("bkgOnlyFit")) c->SaveAs("fitres/mGGBackground.png");  
   if(opts.getBoolVal("dataFit"))    c->SaveAs("fitres/mGGData.png");  
-  MassPlot->Write();
+  plot->Write();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,27 +221,9 @@ void PlotGG(int nbins=19) {
 // Make the plot for a given variable
 RooPlot *MakePlot(TString VarName, MLFit* theFit, RooDataSet* theData, int nbins, bool poissonError=true)
 {
-  RooRealVar* Var = theFit->RealObservable(VarName);
-  double min=Var->getMin();
-  double max=Var->getMax();
-  RooPlot *plot = Var->frame(min,max,nbins);
-  
-  // plot the data
-  if(poissonError)       
-    theData->plotOn(plot);
-  else 
-    theData->plotOn(plot, RooFit::DataError(RooAbsData::SumW2) );
 
-  // plot the total likelihood
-  RooAbsPdf *thePdf = theFit->getPdf("myFit");
-  thePdf->plotOn(plot, RooFit::LineColor(kBlack));
 
-  double Ns = theFit->getRealPar("N_sig")->getVal();
-  double Nb = theFit->getRealPar("N_bkg")->getVal();
 
-  // plot (dashed) the bkg component
-  theFit->getRealPar("N_sig")->setVal(0.);
-  thePdf->plotOn(plot, RooFit::Normalization(Nb/(Ns+Nb)),RooFit::LineColor(kBlack),RooFit::LineStyle(kDashed));
 
   return plot;
 }
